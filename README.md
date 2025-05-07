@@ -31,7 +31,6 @@ The output stores:
 
 ## 👥 Contributors
 
-## Contributors
 This project was developed as part of a hackathon by Team Hawkeye:
 - Vishnu R
 - Tharun Kumar V
