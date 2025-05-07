@@ -31,12 +31,13 @@ The output stores:
 
 ## 👥 Contributors
 
-Thanks to the following people who made this project possible:
-1.Vishnu R (Team Leader)
-2.Tharun kumar V
-3.Vignesh V
-4.Suriya K
-5.Vishnupriyan D
+## Contributors
+This project was developed as part of a hackathon by Team Hawkeye:
+- Vishnu R
+- Tharun Kumar V
+- Vignesh V
+- Suriya K
+- Vishnupriya D
 
 ## 📁 Project Structure
 youtube-time-analyzer/
