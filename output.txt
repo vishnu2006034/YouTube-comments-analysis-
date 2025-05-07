@@ -1,0 +1,74 @@
+```json
+[
+  {
+    "interval": "0-15s",
+    "sentiment_analysis": "Positive and anticipatory. Reference to Goodfellas suggests excitement and expectation of a good story.",
+    "recommendation": "None"
+  },
+  {
+    "interval": "15-30s",
+    "sentiment_analysis": "Nostalgic and appreciative of a specific dialogue.",
+    "recommendation": "None"
+  },
+  {
+    "interval": "30-45s",
+    "sentiment_analysis": "Critical and potentially offensive, questioning the narrative and using derogatory language.",
+    "recommendation": "Flag for potentially offensive content."
+  },
+  {
+    "interval": "45-60s",
+    "sentiment_analysis": "Positive and appreciative of Vetri Maaran, but without much context.",
+    "recommendation": "None"
+  },
+  {
+    "interval": "60-75s",
+    "sentiment_analysis": "Critical and questioning of societal norms and promoting violence.",
+    "recommendation": "Flag for potentially offensive and inappropriate content."
+  },
+  {
+    "interval": "75-90s",
+    "sentiment_analysis": "Critical of child marriage and criticizes promotion of bad habits.",
+    "recommendation": "None"
+  },
+  {
+    "interval": "90-105s",
+    "sentiment_analysis": "Humorous and out of context.",
+    "recommendation": "None"
+  },
+  {
+    "interval": "105-120s",
+    "sentiment_analysis": "Humorous and out of context.",
+    "recommendation": "None"
+  },
+  {
+    "interval": "120-135s",
+    "sentiment_analysis": "Critical of the film's portrayal of feminism and female empowerment, accusing it of promoting 'fake feminism'. Some comments express frustration and anger and wishing suicide on women.",
+    "recommendation": "Flag for potentially offensive and hateful content."
+  },
+  {
+    "interval": "135-150s",
+    "sentiment_analysis": "Strongly critical of glorifying suicide, considering it harmful and triggering.",
+    "recommendation": "Flag for potentially harmful content."
+  },
+  {
+    "interval": "150-165s",
+    "sentiment_analysis": "Anger and frustration towards the movie, with stereotypical accusations of biasedness, hate, and double standards.",
+    "recommendation": "Flag for potentially offensive content."
+  },
+  {
+    "interval": "165-180s",
+    "sentiment_analysis": "Mixed: Some find it funny, some find it triggering to a political party.",
+    "recommendation": "None"
+  },
+  {
+    "interval": "180-195s",
+    "sentiment_analysis": "Mixed: Some are questioning the logic presented in the movie.",
+    "recommendation": "None"
+  },
+  {
+    "interval": "195-210s",
+    "sentiment_analysis": "Extremely negative and aggressive, using offensive language and expressing anger towards the director.",
+    "recommendation": "Flag for abusive and offensive content."
+  }
+]
+```
