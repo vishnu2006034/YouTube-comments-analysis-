@@ -1,4 +1,5 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request,url_for
+import requests
 from googleapiclient.discovery import build
 import pandas as pd
 import re
@@ -11,17 +12,31 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///mydata.db'
 db = SQLAlchemy(app)
 
-YOUTUBE_API_KEY = 'Your youtube apikey'
-GEMINI_API_KEY = 'Your gemini apikey'
+YOUTUBE_API_KEY ='your youtube apikey'
+GEMINI_API_KEY = 'your gemini apikey'
 genai.configure(api_key=GEMINI_API_KEY)
 
 class Movie(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    moviename = db.Column(db.String, nullable=False)
+    video_id=db.Column(db.String, unique=True)
+    thumbnail=db.Column(db.String,default='default.img')
+    moviename = db.Column(db.String, nullable=False )
     time_strap = db.Column(db.DateTime, default=datetime.utcnow)
     sentiment = db.Column(db.Text, nullable=False)
     recommendation = db.Column(db.Text, nullable=False)
 
+    def to_dict(self):
+            return {
+                'id': self.id,
+                'video_id': self.video_id,
+                # 'title': self.title,
+                'moviename': self.moviename,
+                'thumbnail': self.thumbnail,
+                # 'comments_csv': self.comments_csv,
+                'interval': self.time_strap,
+                'sentiment_analysis': self.sentiment,
+                'recommendation': self.recommendation
+            }
 def extract_timestamps(text):
     if pd.isnull(text):
         return None
@@ -52,6 +67,15 @@ def index():
 
         video_id = search_response['items'][0]['id']['videoId']
         video_title = search_response['items'][0]['snippet']['title']
+        thumbnail_url = f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
+        response = requests.get(thumbnail_url)
+
+        if response.status_code == 200:
+            with open(f"static/{video_id}_thumbnail.jpg", "wb") as f:
+                f.write(response.content)
+            thumbnail_path = f"static/{video_id}_thumbnail.jpg"
+        else:
+            thumbnail_path = None
 
         next_page_token = None
         while True:
@@ -121,6 +145,8 @@ Here is the data:
             recommendation_combined = " | ".join(recommendations)
 
             new_movie = Movie(
+                thumbnail=video_id + '_thumbnail.jpg',
+                video_id=video_id,
                 moviename=video_title,
                 time_strap=datetime.now(),
                 sentiment=sentiment_combined,
@@ -129,12 +155,19 @@ Here is the data:
             db.session.add(new_movie)
             db.session.commit()
             
-            return render_template('info.html', data=data, moviename=search_query)
+            
+            return render_template('info.html', data=data, moviename=search_query,video_id=video_id,thumbnail_url=thumbnail_url)
 
         except (AttributeError, IndexError, json.JSONDecodeError) as e:
             return render_template('front end.html', error=f"Gemini response error: {str(e)}")
+    content=Movie.query.all()
+    return render_template('front end.html',content=content)
 
-    return render_template('front end.html')
+@app.route('/video/<video_id>')
+def show_video(video_id):
+    video = Movie.query.filter_by(video_id=video_id).first_or_404()
+    video = video.to_dict()
+    return render_template('video_detail.html', video=video)
 
 if __name__ == '__main__':
     with app.app_context():

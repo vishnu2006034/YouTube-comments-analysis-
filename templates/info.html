@@ -98,8 +98,11 @@
       </tr>
     </thead>
     <tbody>
+      <img src="{{ url_for('static', filename=video_id + '_thumbnail.jpg') }}" alt="Thumbnail">
       {% for item in data %}
       <tr>
+        
+
         <td data-label="Timestamp">{{ item.interval }}</td>
         <td data-label="Sentiment">{{ item.sentiment_analysis }}</td>
         <td data-label="Recommendation">{{ item.recommendation }}</td>

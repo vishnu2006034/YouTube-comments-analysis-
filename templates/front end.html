@@ -195,7 +195,19 @@
       
       <li>Clean web interface with detailed breakdowns</li></bold></p>
   </div>
+  <h2>History</h2>
+<div style="display: flex; flex-wrap: wrap;">
+  {% for v in content %}
   
+    <div style="margin: 10px;">
+      <a href="{{ url_for('show_video', video_id=v.video_id) }}">
+        <img src="{{ url_for('static', filename=v.thumbnail) }}" alt="{{ v.title }}" width="200">
+
+        <p>{{ v.title }}</p>
+      </a>
+    </div>
+  {% endfor %}
+</div>
   
 
   <script>

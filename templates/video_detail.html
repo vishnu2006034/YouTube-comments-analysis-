@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>movie</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      max-width: 700px;
+      margin-bottom: 30px;
+    }
+    th, td {
+      text-align: left;
+      padding: 10px;
+      border: 1px solid #ccc;
+    }
+    th {
+      background-color: #f4f4f4;
+    }
+    img {
+      max-width: 300px;
+      margin-bottom: 20px;
+    }
+    a {
+      text-decoration: none;
+      color: #007BFF;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>{{ video.title }}</h2>
+
+  <img src="{{ url_for('static', filename=video.thumbnail) }}" alt="Thumbnail">
+
+  <table>
+    
+    <tr>
+      <th>Movie Name</th>
+      <td>{{ video.moviename }}</td>
+    </tr>
+    <tr>
+      <th>Video ID</th>
+      <td>{{ video.video_id }}</td>
+    </tr>
+    <tr>
+      <th>Timestamp</th>
+      <td>{{ video.interval }}</td>
+    </tr>
+    <tr>
+      <th>Sentiment</th>
+      <td>{{ video.sentiment_analysis }}</td>
+    </tr>
+    <tr>
+      <th>Recommendation</th>
+      <td>{{ video.recommendation }}</td>
+    </tr>
+  </table>
+
+  <h3>Comments with Timestamps</h3>
+  <pre>{{ video.comments_csv }}</pre>
+
+  <a href="{{ url_for('index') }}">← Back to history</a>
+
+</body>
+</html>
