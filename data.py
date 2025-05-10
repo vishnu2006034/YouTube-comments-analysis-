@@ -12,8 +12,8 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///mydata.db'
 db = SQLAlchemy(app)
 
-YOUTUBE_API_KEY ='your youtube apikey'
-GEMINI_API_KEY = 'your gemini apikey'
+YOUTUBE_API_KEY ='AIzaSyCPUnywTZTK_gFnJaY3U4hSxBKl6Ou-VZg'
+GEMINI_API_KEY = 'AIzaSyBCbN5o17KJSpTE0Oi-WX9JRdEIDCRk9xo'
 genai.configure(api_key=GEMINI_API_KEY)
 
 class Movie(db.Model):
@@ -21,9 +21,16 @@ class Movie(db.Model):
     video_id=db.Column(db.String, unique=True)
     thumbnail=db.Column(db.String,default='default.img')
     moviename = db.Column(db.String, nullable=False )
-    time_strap = db.Column(db.DateTime, default=datetime.utcnow)
+    sentiments = db.relationship('SentimentAnalysis', backref='movie', lazy=True)
+
+
+class SentimentAnalysis(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    movie_id = db.Column(db.Integer, db.ForeignKey('movie.id'), nullable=False)
+    time_strap = db.Column(db.String, nullable=False)
     sentiment = db.Column(db.Text, nullable=False)
     recommendation = db.Column(db.Text, nullable=False)
+
 
     def to_dict(self):
             return {
@@ -148,13 +155,21 @@ Here is the data:
                 thumbnail=video_id + '_thumbnail.jpg',
                 video_id=video_id,
                 moviename=video_title,
-                time_strap=datetime.now(),
-                sentiment=sentiment_combined,
-                recommendation=recommendation_combined
+                
             )
             db.session.add(new_movie)
             db.session.commit()
-            
+            for item in data:
+                row = SentimentAnalysis(
+                    movie_id=new_movie.id,
+                    time_strap=item.get('interval', ''),
+                    sentiment=item.get('sentiment_analysis', ''),
+                    recommendation=item.get('recommendation', '')
+                )
+                db.session.add(row)
+
+            db.session.commit()
+
             
             return render_template('info.html', data=data, moviename=search_query,video_id=video_id,thumbnail_url=thumbnail_url)
 
@@ -166,8 +181,8 @@ Here is the data:
 @app.route('/video/<video_id>')
 def show_video(video_id):
     video = Movie.query.filter_by(video_id=video_id).first_or_404()
-    video = video.to_dict()
-    return render_template('video_detail.html', video=video)
+    sentiment_data = SentimentAnalysis.query.filter_by(movie_id=video.id).all()
+    return render_template('video_detail.html', video=video,data=sentiment_data)
 
 if __name__ == '__main__':
     with app.app_context():
