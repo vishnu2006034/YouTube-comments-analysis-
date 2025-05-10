@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Movie Review</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    body {
+      background-color: #000;
+      color: white;
+      overflow-x: hidden;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 30px 50px;
+      background-color: #111;
+    }
+
+    header h1 {
+      font-size: 2.5rem;
+      color: #f5c518;
+    }
+
+    .info-btn {
+      padding: 10px 20px;
+      font-size: 1rem;
+      border-radius: 30px;
+      background-color: #f5c518;
+      border: none;
+      cursor: pointer;
+      color: #000;
+      font-weight: bold;
+    }
+
+    .main-search {
+      display: flex;
+      justify-content: center;
+      margin: 40px 0 20px;
+    }
+
+    .main-search input {
+      width: 60%;
+      max-width: 600px;
+      padding: 18px 25px;
+      font-size: 1.2rem;
+      border-radius: 40px;
+      border: none;
+      background-color: #222;
+      color: white;
+    }
+
+    .scroll-section {
+      padding: 40px 30px;
+      text-align: center;
+      position: relative;
+    }
+
+    .scroll-section h2 {
+      font-size: 2rem;
+      color: #f5c518;
+      margin-bottom: 30px;
+    }
+
+    .scroll-wrapper {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .movie-row {
+      display: flex;
+      gap: 30px;
+      overflow-x: auto;
+      scroll-behavior: smooth;
+      scroll-snap-type: x mandatory;
+      scroll-padding: 20px;
+      padding: 20px 60px;
+      max-width: 90vw;
+    }
+
+    .movie-row::-webkit-scrollbar {
+      height: 8px;
+    }
+
+    .movie-row::-webkit-scrollbar-thumb {
+      background: #555;
+      border-radius: 10px;
+    }
+
+    .movie-row::-webkit-scrollbar-track {
+      background: #111;
+    }
+
+    .movie-column {
+      flex: 0 0 auto;
+      scroll-snap-align: start;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      min-width: 200px;
+    }
+
+    .poster {
+      width: 180px;
+      height: 260px;
+      background-color: #222;
+      background-size: cover;
+      background-position: center;
+      border-radius: 15px;
+      box-shadow: 0 4px 10px rgba(255, 255, 255, 0.1);
+    }
+
+    .movie-title {
+      color: #ccc;
+      font-size: 1rem;
+      text-align: center;
+    }
+
+    .arrow-btn {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: linear-gradient(145deg, #f5c518, #d4a700);
+      border: none;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      box-shadow: 0 0 15px rgba(245, 197, 24, 0.5);
+      cursor: pointer;
+      font-size: 1.8rem;
+      color: black;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1;
+    }
+
+    .arrow-left {
+      left: 10px;
+      display: none;
+    }
+
+    .arrow-right {
+      right: 10px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Teaser Analyser</h1>
+    <button class="info-btn">Account Info</button>
+  </header>
+
+  <div class="main-search">
+    <input type="text" placeholder="Search for movies...">
+  </div>
+
+  <div class="scroll-section">
+    <h2>History</h2>
+    <div class="scroll-wrapper">
+      <button class="arrow-btn arrow-left" id="leftBtn">&#8249;</button>
+      <div class="movie-row" id="movieRow">
+        <div class="movie-column">
+          <a href="{{ url_for('show_video', video_id=v.video_id) }}">
+            <img src="{{ url_for('static', filename=v.thumbnail) }}" alt="{{ v.title }}" width="200">
+
+          <div class="poster" style="background-image: url('poster2.jpg');"></div>
+          <div class="movie-title">Movie Title 2</div>
+        </div>
+        <div class="movie-column">
+          <div class="poster" style="background-image: url('poster3.jpg');"></div>
+          <div class="movie-title">Movie Title 3</div>
+          <div class="poster" style="background-image: url('poster4.jpg');"></div>
+          <div class="movie-title">Movie Title 4</div>
+        </div>
+        <div class="movie-column">
+          <div class="poster" style="background-image: url('poster5.jpg');"></div>
+          <div class="movie-title">Movie Title 5</div>
+          <div class="poster" style="background-image: url('poster6.jpg');"></div>
+          <div class="movie-title">Movie Title 6</div>
+        </div>
+        <div class="movie-column">
+            <div class="poster" style="background-image: url('poster5.jpg');"></div>
+            <div class="movie-title">Movie Title 5</div>
+            <div class="poster" style="background-image: url('poster6.jpg');"></div>
+            <div class="movie-title">Movie Title 6</div>
+          </div>
+          <div class="movie-column">
+            <div class="poster" style="background-image: url('poster5.jpg');"></div>
+            <div class="movie-title">Movie Title 5</div>
+            <div class="poster" style="background-image: url('poster6.jpg');"></div>
+            <div class="movie-title">Movie Title 6</div>
+          </div>
+          <div class="movie-column">
+            <div class="poster" style="background-image: url('poster5.jpg');"></div>
+            <div class="movie-title">Movie Title 5</div>
+            <div class="poster" style="background-image: url('poster6.jpg');"></div>
+            <div class="movie-title">Movie Title 6</div>
+          </div>
+          <div class="movie-column">
+            <div class="poster" style="background-image: url('poster5.jpg');"></div>
+            <div class="movie-title">Movie Title 5</div>
+            <div class="poster" style="background-image: url('poster6.jpg');"></div>
+            <div class="movie-title">Movie Title 6</div>
+          </div>
+          <div class="movie-column">
+            <div class="poster" style="background-image: url('poster5.jpg');"></div>
+            <div class="movie-title">Movie Title 5</div>
+            <div class="poster" style="background-image: url('poster6.jpg');"></div>
+            <div class="movie-title">Movie Title 6</div>
+          </div>
+          <div class="movie-column">
+            <div class="poster" style="background-image: url('poster5.jpg');"></div>
+            <div class="movie-title">Movie Title 5</div>
+            <div class="poster" style="background-image: url('poster6.jpg');"></div>
+            <div class="movie-title">Movie Title 6</div>
+          </div>
+          <div class="movie-column">
+            <div class="poster" style="background-image: url('poster5.jpg');"></div>
+            <div class="movie-title">Movie Title 5</div>
+            <div class="poster" style="background-image: url('poster6.jpg');"></div>
+            <div class="movie-title">Movie Title 6</div>
+          </div>
+      </div>
+      <button class="arrow-btn arrow-right" id="rightBtn">&#8250;</button>
+    </div>
+  </div>
+
+  <script>
+    const movieRow = document.getElementById('movieRow');
+    const leftBtn = document.getElementById('leftBtn');
+    const rightBtn = document.getElementById('rightBtn');
+    const scrollAmount = 400;
+
+    rightBtn.addEventListener('click', () => {
+      movieRow.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    });
+
+    leftBtn.addEventListener('click', () => {
+      movieRow.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+    });
+
+    movieRow.addEventListener('scroll', () => {
+      leftBtn.style.display = movieRow.scrollLeft > 50 ? 'flex' : 'none';
+    });
+  </script>
+</body>
+</html>

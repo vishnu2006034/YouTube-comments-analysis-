@@ -169,6 +169,18 @@
     .arrow-right {
       right: 10px;
     }
+    .grid-container {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr); /* 2 columns */
+      gap: 20px;
+      padding: 20px;
+      justify-items: center;
+    }
+
+    .movie-item {
+      text-align: center;
+    }
+
   </style>
 </head>
 <body>
@@ -195,19 +207,22 @@
       
       <li>Clean web interface with detailed breakdowns</li></bold></p>
   </div>
-  <h2>History</h2>
-<div style="display: flex; flex-wrap: wrap;">
-  {% for v in content %}
-  
-    <div style="margin: 10px;">
-      <a href="{{ url_for('show_video', video_id=v.video_id) }}">
-        <img src="{{ url_for('static', filename=v.thumbnail) }}" alt="{{ v.title }}" width="200">
 
-        <p>{{ v.title }}</p>
-      </a>
-    </div>
+<div style="display: flex; flex-wrap: wrap;">
+  
+  
+    <h2 style="text-align: center;">History</h2>
+<div class="grid-container">
+  {% for v in content %}
+  <div class="movie-item">
+    <a href="{{ url_for('show_video', video_id=v.video_id) }}">
+      <img src="{{ url_for('static', filename=v.thumbnail) }}" alt="{{ v.moviename }}" width="200">
+    </a>
+    <div class="movie-title">{{ v.moviename }}</div>
+  </div>
   {% endfor %}
 </div>
+
   
 
   <script>
