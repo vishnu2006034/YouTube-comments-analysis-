@@ -12,8 +12,8 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///mydata.db'
 db = SQLAlchemy(app)
 
-YOUTUBE_API_KEY ='AIzaSyCPUnywTZTK_gFnJaY3U4hSxBKl6Ou-VZg'
-GEMINI_API_KEY = 'AIzaSyBCbN5o17KJSpTE0Oi-WX9JRdEIDCRk9xo'
+YOUTUBE_API_KEY ='your youtube apikey'
+GEMINI_API_KEY = 'your gemini apikey'
 genai.configure(api_key=GEMINI_API_KEY)
 
 class Movie(db.Model):
