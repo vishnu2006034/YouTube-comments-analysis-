@@ -1,0 +1,25 @@
+import google.generativeai as genai
+API_KEY = 'AIzaSyC7qH8jy-UudvxX7zgOwb0DM_Nuw2icjSY'
+
+genai.configure(api_key=API_KEY)
+
+for model in genai.list_models():
+    print(model.name) 
+
+from googleapiclient.discovery import build
+
+API_KEY = "AIzaSyCC5uklztxt4LgF8GzYpqM7itIhRCNeCes"
+
+youtube = build("youtube", "v3", developerKey=API_KEY)
+
+try:
+    response = youtube.videos().list(
+        part="snippet",
+        id="dQw4w9WgXcQ"  # Example video ID
+    ).execute()
+
+    print("API Key Works!")
+    print(response)
+
+except Exception as e:
+    print("Error:", e)

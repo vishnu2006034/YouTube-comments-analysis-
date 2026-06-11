@@ -12,8 +12,8 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///mydata.db'
 db = SQLAlchemy(app)
 
-YOUTUBE_API_KEY ='your youtube apikey'
-GEMINI_API_KEY = 'your gemini apikey'
+YOUTUBE_API_KEY ='AIzaSyCC5uklztxt4LgF8GzYpqM7itIhRCNeCes'
+GEMINI_API_KEY = 'AIzaSyC7qH8jy-UudvxX7zgOwb0DM_Nuw2icjSY'
 genai.configure(api_key=GEMINI_API_KEY)
 
 class Movie(db.Model):
@@ -123,7 +123,7 @@ Here is the data:
 {csv_text}
 """
 
-        model = genai.GenerativeModel(model_name="models/gemini-2.0-flash-exp-image-generation")
+        model = genai.GenerativeModel(model_name="models/gemini-2.5-flash")
 
         try:
             response = model.generate_content(prompt)
