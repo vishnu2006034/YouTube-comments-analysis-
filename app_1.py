@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request,url_for
+from flask import Flask, render_template, request, url_for
 import requests
 from googleapiclient.discovery import build
 import pandas as pd
@@ -12,15 +12,16 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///mydata.db'
 db = SQLAlchemy(app)
 
-YOUTUBE_API_KEY ='youtbe api'
+YOUTUBE_API_KEY = 'youtube api'
 GEMINI_API_KEY = 'gemini api'
 genai.configure(api_key=GEMINI_API_KEY)
 
+
 class Movie(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    video_id=db.Column(db.String, unique=True)
-    thumbnail=db.Column(db.String,default='default.img')
-    moviename = db.Column(db.String, nullable=False )
+    video_id = db.Column(db.String, unique=True)
+    thumbnail = db.Column(db.String, default='default.img')
+    moviename = db.Column(db.String, nullable=False)
     sentiments = db.relationship('SentimentAnalysis', backref='movie', lazy=True)
 
 
@@ -31,25 +32,49 @@ class SentimentAnalysis(db.Model):
     sentiment = db.Column(db.Text, nullable=False)
     recommendation = db.Column(db.Text, nullable=False)
 
-
     def to_dict(self):
-            return {
-                'id': self.id,
-                'video_id': self.video_id,
-                # 'title': self.title,
-                'moviename': self.moviename,
-                'thumbnail': self.thumbnail,
-                # 'comments_csv': self.comments_csv,
-                'interval': self.time_strap,
-                'sentiment_analysis': self.sentiment,
-                'recommendation': self.recommendation
-            }
+        return {
+            'id': self.id,
+            'movie_id': self.movie_id,
+            'time_strap': self.time_strap,
+            'sentiment': self.sentiment,
+            'recommendation': self.recommendation,
+        }
+
+
+def extract_video_id(query):
+    """
+    Returns an 11-character YouTube video ID if the query is any recognised
+    YouTube URL format, otherwise returns None so the caller can fall back to
+    a keyword search.
+
+    Supported formats:
+      https://www.youtube.com/watch?v=VIDEO_ID
+      https://www.youtube.com/watch?v=VIDEO_ID&t=30s   (extra params)
+      https://youtu.be/VIDEO_ID
+      https://www.youtube.com/embed/VIDEO_ID
+      https://www.youtube.com/shorts/VIDEO_ID
+      https://m.youtube.com/watch?v=VIDEO_ID
+    """
+    patterns = [
+        r'(?:v=)([\w-]{11})',            # ?v=ID  (watch URLs)
+        r'youtu\.be/([\w-]{11})',         # youtu.be/ID
+        r'(?:embed|shorts)/([\w-]{11})',  # embed/ or shorts/ID
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, query)
+        if match:
+            return match.group(1)
+    return None
+
+
 def extract_timestamps(text):
     if pd.isnull(text):
         return None
     pattern = r'\b\d{1,2}:\d{2}(?:\s?[APMapm]{2})?\b'
     matches = re.findall(pattern, text, flags=re.IGNORECASE)
     return matches if matches else None
+
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -61,19 +86,37 @@ def index():
 
         youtube = build('youtube', 'v3', developerKey=YOUTUBE_API_KEY)
 
-    
-        search_response = youtube.search().list(
-            q=search_query,
-            part='snippet',
-            maxResults=1,
-            type='video'
-        ).execute()
+        # ── Detect whether the input is a direct YouTube URL ──────────────────
+        video_id = extract_video_id(search_query)
 
-        if not search_response['items']:
-            return render_template('index.html', error="No video found.")
+        if video_id:
+            # Fetch video metadata directly — no search quota used
+            video_response = youtube.videos().list(
+                part='snippet',
+                id=video_id
+            ).execute()
 
-        video_id = search_response['items'][0]['id']['videoId']
-        video_title = search_response['items'][0]['snippet']['title']
+            if not video_response['items']:
+                return render_template('frontend.html', error="Video not found. Please check the URL.")
+
+            video_title = video_response['items'][0]['snippet']['title']
+
+        else:
+            # Fall back to keyword search
+            search_response = youtube.search().list(
+                q=search_query,
+                part='snippet',
+                maxResults=1,
+                type='video'
+            ).execute()
+
+            if not search_response['items']:
+                return render_template('frontend.html', error="No video found.")
+
+            video_id = search_response['items'][0]['id']['videoId']
+            video_title = search_response['items'][0]['snippet']['title']
+
+        # ── Thumbnail ─────────────────────────────────────────────────────────
         thumbnail_url = f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
         response = requests.get(thumbnail_url)
 
@@ -84,6 +127,7 @@ def index():
         else:
             thumbnail_path = None
 
+        # ── Fetch all comments ────────────────────────────────────────────────
         next_page_token = None
         while True:
             comment_response = youtube.commentThreads().list(
@@ -102,13 +146,12 @@ def index():
             if not next_page_token:
                 break
 
-        
+        # ── Extract timestamped comments and build prompt ─────────────────────
         df = pd.DataFrame(comments)
         df['extracted_timestamps'] = df['Comment'].apply(extract_timestamps)
         df_filtered = df[df['extracted_timestamps'].notnull()][['Comment', 'extracted_timestamps']]
         csv_text = df_filtered.to_string(index=False)
 
-    
         prompt = f"""
 You are a strict JSON generator.
 
@@ -129,7 +172,7 @@ Here is the data:
             response = model.generate_content(prompt)
 
             if not response or not hasattr(response, 'candidates') or not response.candidates:
-                return render_template('index.html', error="No valid response from Gemini.")
+                return render_template('frontend.html', error="No valid response from Gemini.")
 
             response_text = response.candidates[0].content.parts[0].text.strip()
 
@@ -141,24 +184,15 @@ Here is the data:
 
             data = json.loads(raw)
 
-            sentiment_summary = []
-            recommendations = []
-
-            for item in data:
-                sentiment_summary.append(f"{item.get('interval')}: {item.get('sentiment_analysis')}")
-                recommendations.append(f"{item.get('interval')}: {item.get('recommendation')}")
-
-            sentiment_combined = " | ".join(sentiment_summary)
-            recommendation_combined = " | ".join(recommendations)
-
+            # ── Persist to DB ─────────────────────────────────────────────────
             new_movie = Movie(
                 thumbnail=video_id + '_thumbnail.jpg',
                 video_id=video_id,
                 moviename=video_title,
-                
             )
             db.session.add(new_movie)
             db.session.commit()
+
             for item in data:
                 row = SentimentAnalysis(
                     movie_id=new_movie.id,
@@ -170,19 +204,27 @@ Here is the data:
 
             db.session.commit()
 
-            
-            return render_template('info.html', data=data, moviename=search_query,video_id=video_id,thumbnail_url=thumbnail_url)
+            return render_template(
+                'info.html',
+                data=data,
+                moviename=video_title,
+                video_id=video_id,
+                thumbnail_url=thumbnail_url
+            )
 
         except (AttributeError, IndexError, json.JSONDecodeError) as e:
             return render_template('frontend.html', error=f"Gemini response error: {str(e)}")
-    content=Movie.query.all()
-    return render_template('frontend.html',content=content)
+
+    content = Movie.query.all()
+    return render_template('frontend.html', content=content)
+
 
 @app.route('/video/<video_id>')
 def show_video(video_id):
     video = Movie.query.filter_by(video_id=video_id).first_or_404()
     sentiment_data = SentimentAnalysis.query.filter_by(movie_id=video.id).all()
-    return render_template('video_detail.html', video=video,data=sentiment_data)
+    return render_template('video_detail.html', video=video, data=sentiment_data)
+
 
 if __name__ == '__main__':
     with app.app_context():
