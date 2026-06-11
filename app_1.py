@@ -155,10 +155,10 @@ def index():
         prompt = f"""
 You are a strict JSON generator.
 
-Analyze the sentiment of YouTube comments in the following CSV data, segmented into roughly 15-second intervals from the beginning. Return a pure JSON array of objects only. No explanations or formatting.
+Analyze the sentiment of YouTube comments in the following CSV data, segmented into roughly 60-second intervals from the beginning. Return a pure JSON array of objects only. No explanations or formatting.
 
 Each object must contain:
-* "interval": "[Start Time]-[End Time]" (e.g., "0-15s")
+* "interval": "[Start Time]-[End Time]" (e.g., "0-60s")
 * "sentiment_analysis": "[Sentiment summary]"
 * "recommendation": "[Suggested action]"
 
