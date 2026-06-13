@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Analyzing Comments...</title>
+  <style>
+    * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; }
+    body {
+      background: #000;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+    }
+    .card {
+      width: 100%;
+      max-width: 720px;
+      background: #0b0b0b;
+      border: 1px solid rgba(245,197,24,0.25);
+      border-radius: 16px;
+      padding: 26px;
+      box-shadow: 0 0 25px rgba(245,197,24,0.08);
+    }
+    h1 { font-size: 1.6rem; color: #f5c518; margin-bottom: 10px; }
+    p { color: #cfcfcf; margin-bottom: 18px; line-height: 1.5; }
+
+    .bar-wrap {
+      background: #111;
+      border-radius: 999px;
+      height: 14px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #f5c518, #d4a700);
+      border-radius: 999px;
+      transition: width 0.25s ease;
+    }
+
+    .steps {
+      margin-top: 18px;
+      display: grid;
+      gap: 10px;
+    }
+    .step {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.05);
+      opacity: 0.75;
+    }
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: rgba(245,197,24,0.25);
+      box-shadow: 0 0 0 rgba(245,197,24,0.0);
+    }
+    .step.active { opacity: 1; border-color: rgba(245,197,24,0.35); }
+    .step.active .dot { background: #f5c518; box-shadow: 0 0 18px rgba(245,197,24,0.28); }
+    .step.done { opacity: 1; border-color: rgba(245,197,24,0.45); }
+    .step.done .dot { background: #46e37b; box-shadow: 0 0 18px rgba(70,227,123,0.28); }
+
+    .small {
+      margin-top: 14px;
+      color: #9a9a9a;
+      font-size: 0.95rem;
+    }
+
+    @media (max-width: 480px) {
+      h1 { font-size: 1.3rem; }
+      .card { padding: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Analyzing comment sentiment…</h1>
+    <p>This can take a few seconds. We’re collecting timestamps and generating interval-wise sentiment + recommendations.</p>
+
+    <div class="bar-wrap" aria-label="progress">
+      <div class="bar" id="bar"></div>
+    </div>
+
+    <div class="steps">
+      <div class="step active" id="s1"><span class="dot"></span> Fetching comments</div>
+      <div class="step" id="s2"><span class="dot"></span> Extracting timestamps</div>
+      <div class="step" id="s3"><span class="dot"></span> Generating recommendations</div>
+      <div class="step" id="s4"><span class="dot"></span> Saving results</div>
+    </div>
+
+    <div class="small">Tip: If you don’t see output, try a different video with fewer timestamped comments.</div>
+  </div>
+
+  <script>
+    // Simple simulated progress. For real progress, switch to AJAX + backend status updates.
+    const bar = document.getElementById('bar');
+    const steps = [
+      document.getElementById('s1'),
+      document.getElementById('s2'),
+      document.getElementById('s3'),
+      document.getElementById('s4'),
+    ];
+
+    function setActive(i) {
+      steps.forEach((el, idx) => {
+        el.classList.remove('active', 'done');
+        if (idx < i) el.classList.add('done');
+        if (idx === i) el.classList.add('active');
+      });
+    }
+
+    let p = 0;
+    setActive(0);
+
+    const tick = () => {
+      // non-linear ramp
+      const inc = 2 + Math.random() * 6;
+      p = Math.min(94, p + inc);
+      bar.style.width = p + '%';
+
+      if (p >= 25) setActive(1);
+      if (p >= 55) setActive(2);
+      if (p >= 80) setActive(3);
+
+      if (p >= 94) return;
+      setTimeout(tick, 300);
+    };
+
+    setTimeout(tick, 250);
+  </script>
+</body>
+</html>
+

@@ -2,18 +2,28 @@ from flask import Flask, render_template, request, url_for
 import requests
 from googleapiclient.discovery import build
 import pandas as pd
+import os
+
+# --- Performance caps (reduce API + prompt size) ---
+MAX_COMMENT_PAGES = int(os.getenv("MAX_COMMENT_PAGES", "3"))  # pages of commentThreads()
+MAX_TOTAL_COMMENTS = int(os.getenv("MAX_TOTAL_COMMENTS", "300"))  # hard cap on collected comments
+MAX_TIMESTAMPED_ROWS = int(os.getenv("MAX_TIMESTAMPED_ROWS", "120"))  # rows included in Gemini prompt
+
 import re
 import google.generativeai as genai
 import json
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
+from dotenv import load_dotenv
+load_dotenv()
+
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///mydata.db'
 db = SQLAlchemy(app)
 
-YOUTUBE_API_KEY = 'youtube api'
-GEMINI_API_KEY = 'gemini api'
+YOUTUBE_API_KEY = os.getenv("utube_KEY")
+GEMINI_API_KEY = os.getenv("gemini_KEY")
 genai.configure(api_key=GEMINI_API_KEY)
 
 
@@ -82,6 +92,8 @@ def index():
     video_title = ""
 
     if request.method == 'POST':
+        # Give the UI immediate feedback (AJAX-friendly; shown if you add a loader page)
+
         search_query = request.form['query']
 
         youtube = build('youtube', 'v3', developerKey=YOUTUBE_API_KEY)
@@ -127,9 +139,14 @@ def index():
         else:
             thumbnail_path = None
 
-        # ── Fetch all comments ────────────────────────────────────────────────
+        # ── Fetch limited comments (performance cap) ─────────────────────────
         next_page_token = None
+        page_count = 0
+
         while True:
+            if page_count >= MAX_COMMENT_PAGES or len(comments) >= MAX_TOTAL_COMMENTS:
+                break
+
             comment_response = youtube.commentThreads().list(
                 part='snippet',
                 videoId=video_id,
@@ -138,24 +155,52 @@ def index():
                 textFormat='plainText'
             ).execute()
 
-            for item in comment_response['items']:
+            for item in comment_response.get('items', []):
+                if len(comments) >= MAX_TOTAL_COMMENTS:
+                    break
                 comment = item['snippet']['topLevelComment']['snippet']['textDisplay']
                 comments.append({'Comment': comment})
 
+            page_count += 1
             next_page_token = comment_response.get('nextPageToken')
             if not next_page_token:
                 break
 
-        # ── Extract timestamped comments and build prompt ─────────────────────
-        df = pd.DataFrame(comments)
-        df['extracted_timestamps'] = df['Comment'].apply(extract_timestamps)
-        df_filtered = df[df['extracted_timestamps'].notnull()][['Comment', 'extracted_timestamps']]
-        csv_text = df_filtered.to_string(index=False)
+
+        # ── Extract timestamped comments and build prompt (no Pandas) ────────
+        timestamped_rows = []
+        for c in comments:
+            ts = extract_timestamps(c.get('Comment'))
+            if not ts:
+                continue
+            # Keep the comment only once, even if multiple timestamps are present
+            # (Gemini will infer interval impact from the text + timestamps).
+            timestamped_rows.append((ts, c.get('Comment', '')[:800]))
+            if len(timestamped_rows) >= MAX_TIMESTAMPED_ROWS:
+                break
+
+        # Compact text format to minimize prompt size
+        # Example: "['0:15'] :: Comment text" per line
+        lines = []
+        for ts_list, comment_text in timestamped_rows:
+            lines.append(f"{ts_list} :: {comment_text}")
+
+        csv_text = "\n".join(lines)
+
+        # If no timestamped comments, avoid calling Gemini with an empty prompt.
+        if not csv_text.strip():
+            return render_template(
+                'frontend.html',
+                error="No timestamped comments found in the selected comment sample. Try a different video."
+            )
+
+
 
         prompt = f"""
 You are a strict JSON generator.
 
-Analyze the sentiment of YouTube comments in the following CSV data, segmented into roughly 60-second intervals from the beginning. Return a pure JSON array of objects only. No explanations or formatting.
+Analyze the sentiment of YouTube comments in the following data. Each line contains timestamp mentions (if any) plus the related comment text.
+Segment the result into roughly 60-second intervals from the beginning. Return a pure JSON array of objects only. No explanations or formatting.
 
 Each object must contain:
 * "interval": "[Start Time]-[End Time]" (e.g., "0-60s")
@@ -165,6 +210,7 @@ Each object must contain:
 Here is the data:
 {csv_text}
 """
+
 
         model = genai.GenerativeModel(model_name="models/gemini-2.5-flash")
 
@@ -184,18 +230,24 @@ Here is the data:
 
             data = json.loads(raw)
 
-            # ── Persist to DB ─────────────────────────────────────────────────
-            new_movie = Movie(
-                thumbnail=video_id + '_thumbnail.jpg',
-                video_id=video_id,
-                moviename=video_title,
-            )
-            db.session.add(new_movie)
+            # ── Persist to DB (avoid duplicate video_id) ────────────────────────
+            movie = Movie.query.filter_by(video_id=video_id).first()
+            if not movie:
+                movie = Movie(
+                    thumbnail=video_id + '_thumbnail.jpg',
+                    video_id=video_id,
+                    moviename=video_title,
+                )
+                db.session.add(movie)
+                db.session.commit()
+
+            # Remove previous analysis rows for this movie (so re-runs replace old output)
+            SentimentAnalysis.query.filter_by(movie_id=movie.id).delete()
             db.session.commit()
 
             for item in data:
                 row = SentimentAnalysis(
-                    movie_id=new_movie.id,
+                    movie_id=movie.id,
                     time_strap=item.get('interval', ''),
                     sentiment=item.get('sentiment_analysis', ''),
                     recommendation=item.get('recommendation', '')
@@ -207,10 +259,11 @@ Here is the data:
             return render_template(
                 'info.html',
                 data=data,
-                moviename=video_title,
+                moviename=movie.moviename,
                 video_id=video_id,
                 thumbnail_url=thumbnail_url
             )
+
 
         except (AttributeError, IndexError, json.JSONDecodeError) as e:
             return render_template('frontend.html', error=f"Gemini response error: {str(e)}")
