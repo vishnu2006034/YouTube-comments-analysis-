@@ -103,13 +103,28 @@ def index():
 
         if video_id:
             # Fetch video metadata directly — no search quota used
-            video_response = youtube.videos().list(
-                part='snippet',
-                id=video_id
-            ).execute()
+            try:
+                video_response = youtube.videos().list(
+                    part='snippet',
+                    id=video_id
+                ).execute()
+            except Exception as e:
+                return render_template(
+                    'error.html',
+                    error_title='YouTube API error',
+                    error_message='Could not fetch video details from YouTube. Try again in a moment or use a different video.',
+                    error_details=str(e),
+                    recoverable=True,
+                    retry_url=url_for('index'),
+                )
 
-            if not video_response['items']:
-                return render_template('frontend.html', error="Video not found. Please check the URL.")
+            if not video_response.get('items'):
+                return render_template(
+                    'error.html',
+                    error_title='Video not found',
+                    error_message='Please check the URL and try again.',
+                    recoverable=False,
+                )
 
             video_title = video_response['items'][0]['snippet']['title']
 
@@ -122,8 +137,13 @@ def index():
                 type='video'
             ).execute()
 
-            if not search_response['items']:
-                return render_template('frontend.html', error="No video found.")
+            if not search_response.get('items'):
+                return render_template(
+                    'error.html',
+                    error_title='No video found',
+                    error_message='Your search didn\'t return a video. Try a different title/topic.',
+                    recoverable=False,
+                )
 
             video_id = search_response['items'][0]['id']['videoId']
             video_title = search_response['items'][0]['snippet']['title']
@@ -190,8 +210,11 @@ def index():
         # If no timestamped comments, avoid calling Gemini with an empty prompt.
         if not csv_text.strip():
             return render_template(
-                'frontend.html',
-                error="No timestamped comments found in the selected comment sample. Try a different video."
+                'error.html',
+                error_title='No timestamps found',
+                error_message='In the sampled comments, no time references (like 2:15 or 10:30) were detected. Try a different video.',
+                recoverable=True,
+                retry_url=url_for('index'),
             )
 
 
@@ -217,8 +240,16 @@ Here is the data:
         try:
             response = model.generate_content(prompt)
 
+
             if not response or not hasattr(response, 'candidates') or not response.candidates:
-                return render_template('frontend.html', error="No valid response from Gemini.")
+                return render_template(
+                    'error.html',
+                    error_title='Gemini response error',
+                    error_message='The AI did not return valid analysis. Try again with a different video.',
+                    error_details='Missing Gemini candidates/content/parts.',
+                    recoverable=True,
+                    retry_url=url_for('index'),
+                )
 
             response_text = response.candidates[0].content.parts[0].text.strip()
 
@@ -266,7 +297,14 @@ Here is the data:
 
 
         except (AttributeError, IndexError, json.JSONDecodeError) as e:
-            return render_template('frontend.html', error=f"Gemini response error: {str(e)}")
+            return render_template(
+                'error.html',
+                error_title='Gemini JSON parsing error',
+                error_message='The AI response was not in the expected format. Try again with a different video.',
+                error_details=str(e),
+                recoverable=True,
+                retry_url=url_for('index'),
+            )
 
     content = Movie.query.all()
     return render_template('frontend.html', content=content)

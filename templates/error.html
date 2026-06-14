@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Error</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    body {
+      background-color: #000;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 48px 20px;
+      min-height: 100vh;
+    }
+
+    .wrap {
+      width: 100%;
+      max-width: 860px;
+      border-radius: 18px;
+      border: 1px solid rgba(245,197,24,0.25);
+      background: linear-gradient(180deg, rgba(245,197,24,0.09), rgba(0,0,0,0.88));
+      box-shadow: 0 0 40px rgba(245,197,24,0.08);
+      padding: 28px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .badge {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: rgba(245,197,24,0.14);
+      border: 1px solid rgba(245,197,24,0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #f5c518;
+      font-size: 1.2rem;
+      font-weight: 800;
+    }
+
+    h1 {
+      font-size: 2rem;
+      color: #f5c518;
+      line-height: 1.2;
+    }
+
+    .desc {
+      margin-top: 10px;
+      color: #d9d9d9;
+      font-size: 1.08rem;
+      line-height: 1.6;
+    }
+
+    .detail-box {
+      margin-top: 18px;
+      width: 100%;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03);
+      overflow: hidden;
+    }
+
+    .detail-head {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 14px 16px;
+      background: rgba(255,255,255,0.02);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .detail-head .label {
+      color: #f5c518;
+      font-weight: 800;
+    }
+
+    .detail-body {
+      padding: 0 16px 16px 16px;
+    }
+
+    pre {
+      white-space: pre-wrap;
+      word-break: break-word;
+      margin-top: 10px;
+      padding: 14px;
+      border-radius: 12px;
+      background: rgba(0,0,0,0.45);
+      border: 1px solid rgba(255,255,255,0.08);
+      color: #d7d7d7;
+      max-height: 320px;
+      overflow: auto;
+      font-size: 0.95rem;
+      line-height: 1.45;
+    }
+
+    .actions {
+      margin-top: 22px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .btn {
+      appearance: none;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px 18px;
+      border-radius: 999px;
+      font-weight: 800;
+      font-size: 1rem;
+      transition: transform 0.06s ease, filter 0.2s ease;
+    }
+
+    .btn:active { transform: translateY(1px); }
+
+    .btn-primary {
+      background-color: #f5c518;
+      color: #000;
+    }
+
+    .btn-secondary {
+      background: rgba(255,255,255,0.06);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+
+    .small-note {
+      margin-top: 14px;
+      color: rgba(255,255,255,0.7);
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .footer {
+      margin-top: 18px;
+      color: rgba(255,255,255,0.45);
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 520px) {
+      .wrap { padding: 18px; }
+      h1 { font-size: 1.6rem; }
+      .desc { font-size: 1.02rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="brand">
+      <div class="badge">!</div>
+      <div>
+        <h1>{{ error_title or 'Something went wrong' }}</h1>
+        <div class="desc">{{ error_message or 'An unexpected error occurred.' }}</div>
+      </div>
+    </div>
+
+    {% if error_details %}
+    <div class="detail-box">
+      <div class="detail-head" onclick="toggleDetails()" role="button" aria-expanded="false" tabindex="0">
+        <div class="label">Technical details (optional)</div>
+        <div style="color:rgba(255,255,255,0.7);font-weight:800">Show</div>
+      </div>
+      <div class="detail-body" id="details" style="display:none;">
+        <pre>{{ error_details }}</pre>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="actions">
+      <a class="btn btn-secondary" href="{{ url_for('index') }}">← Back to Home</a>
+      {% if recoverable %}
+      <a class="btn btn-primary" href="{{ retry_url or url_for('index') }}">Try Again</a>
+      {% endif %}
+    </div>
+
+    <div class="small-note">
+      If this keeps happening, try a different video (fewer timestamped comments works best).
+    </div>
+
+    <div class="footer">Sentiment Pulse</div>
+  </div>
+
+  <script>
+    function toggleDetails() {
+      const body = document.getElementById('details');
+      const head = document.querySelector('.detail-head');
+      if (!body) return;
+
+      const isHidden = body.style.display === 'none';
+      body.style.display = isHidden ? 'block' : 'none';
+
+      if (head) {
+        const exp = isHidden ? 'true' : 'false';
+        head.setAttribute('aria-expanded', exp);
+      }
+      // Update last element text ("Show"/"Hide")
+      const t = head ? head.querySelector('div:last-child') : null;
+      if (t) t.textContent = isHidden ? 'Hide' : 'Show';
+    }
+
+    // Enable keyboard toggle
+    (function(){
+      const head = document.querySelector('.detail-head');
+      if (!head) return;
+      head.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          toggleDetails();
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
+
