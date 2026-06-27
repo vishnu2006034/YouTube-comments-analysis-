@@ -637,6 +637,7 @@ def analyze_intervals(
     else:
         raw_text = ""
         try:
+            # pyrefly: ignore [missing-import]
             import google.generativeai as genai
             from google.generativeai.types import RequestOptions
 
