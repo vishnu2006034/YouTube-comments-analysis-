@@ -4,62 +4,189 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Comment Interval Analysis</title>
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='youtube.png') }}">
-
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='youtube.png') }}">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
     body { background-color: #000; color: white; display: flex; flex-direction: column; align-items: center; padding: 40px 20px; }
 
-    .wrap { width: 100%; max-width: 1000px; }
+    .wrap { width: 100%; max-width: 1100px; }
     .title { font-size: 2rem; color: #f5c518; text-align: center; margin-bottom: 16px; font-weight: 900; }
     .sub { text-align: center; color: rgba(255,255,255,0.7); margin-bottom: 26px; line-height: 1.5; }
 
-    table { width: 100%; border-collapse: collapse; background: #111; border-radius: 10px; overflow: hidden; box-shadow: 0 10px 20px rgba(255,255,255,0.05); }
-    th, td { padding: 14px 14px; border-bottom: 1px solid #333; color: #ccc; vertical-align: top; }
-    th { background-color: #222; color: #f5c518; font-size: 1.02rem; }
+    .badge { display: inline-block; padding: 6px 12px; border-radius: 999px; background: rgba(245,197,24,0.12); border: 1px solid rgba(245,197,24,0.35); color: #f5c518; font-weight: 900; font-size: 0.95rem; margin-bottom: 20px; }
 
-    tr:last-child td { border-bottom: none; }
+    /* ── Interval Card ────────────────────────────────── */
+    .interval-card {
+      background: #111;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+    .interval-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    .interval-label {
+      background: #f5c518;
+      color: #000;
+      font-weight: 900;
+      font-size: 1rem;
+      padding: 6px 14px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+    .sentiment-bar {
+      flex: 1;
+      display: flex;
+      height: 10px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: #222;
+    }
+    .bar-pos { background: #22c55e; }
+    .bar-neu { background: #a3a3a3; }
+    .bar-neg { background: #ef4444; }
 
-    .badge { display: inline-block; padding: 6px 12px; border-radius: 999px; background: rgba(245,197,24,0.12); border: 1px solid rgba(245,197,24,0.35); color: #f5c518; font-weight: 900; font-size: 0.95rem; margin-bottom: 14px; }
+    .sentiment-text {
+      color: rgba(255,255,255,0.8);
+      font-size: 0.92rem;
+      margin-bottom: 10px;
+    }
 
-    .actions { margin-top: 18px; display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+    .rec-text {
+      color: #e0e0e0;
+      font-size: 0.98rem;
+      line-height: 1.65;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 10px;
+      padding: 14px;
+    }
+
+    /* Topics pills */
+    .topics-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .topic-pill {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(245,197,24,0.1);
+      border: 1px solid rgba(245,197,24,0.25);
+      color: #f5c518;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+
+    /* Section labels */
+    .section-label {
+      color: rgba(255,255,255,0.5);
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 6px;
+      margin-top: 10px;
+    }
+
+    .detail-list {
+      color: rgba(255,255,255,0.75);
+      font-size: 0.9rem;
+      line-height: 1.6;
+      padding-left: 16px;
+      margin-bottom: 8px;
+    }
+
+    .actions { margin-top: 22px; display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
     .btn { appearance: none; border: none; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; padding: 12px 18px; border-radius: 999px; font-weight: 800; font-size: 1rem; transition: transform 0.06s ease, filter 0.2s ease; }
     .btn:active { transform: translateY(1px); }
     .btn-primary { background-color: #f5c518; color: #000; }
     .btn-secondary { background: rgba(255,255,255,0.06); color: #fff; border: 1px solid rgba(255,255,255,0.12); }
 
     @media (max-width: 700px) {
-      th:nth-child(1), td:nth-child(1) { width: 30%; }
+      .interval-header { flex-direction: column; align-items: flex-start; }
     }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="title">Interval Sentiment & Recommendations</div>
+    <div class="title">Interval Sentiment &amp; Recommendations</div>
     <div class="sub">
       Video: <b>{{ video_id }}</b> • Generated from extracted comment CSV.
     </div>
 
     <div class="badge">{{ count }} intervals with insights</div>
 
-    <table>
-      <thead>
-        <tr>
-          <th style="width: 18%">Interval</th>
-          <th>Sentiment</th>
-          <th>Recommendation</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for item in data %}
-          <tr>
-            <td style="color:#fff; font-weight:900">{{ item.interval }}</td>
-            <td>{{ item.sentiment_analysis }}</td>
-            <td>{{ item.recommendation }}</td>
-          </tr>
+    {% for item in data %}
+    <div class="interval-card">
+      <div class="interval-header">
+        <div class="interval-label">{{ item.interval }}</div>
+        <div class="sentiment-bar">
+          <div class="bar-pos" style="width:{{ item.sentiment_breakdown.positive_percent | default(0) }}%"></div>
+          <div class="bar-neu" style="width:{{ item.sentiment_breakdown.neutral_percent | default(0) }}%"></div>
+          <div class="bar-neg" style="width:{{ item.sentiment_breakdown.negative_percent | default(0) }}%"></div>
+        </div>
+      </div>
+
+      <div class="sentiment-text">
+        {{ item.sentiment_analysis }}
+      </div>
+
+      {% if item.top_topics %}
+      <div class="section-label">Top Topics</div>
+      <div class="topics-row">
+        {% for topic in item.top_topics %}
+          <span class="topic-pill" title="{{ topic.viewer_opinion }} — {{ topic.mention_frequency }}">{{ topic.topic }}</span>
         {% endfor %}
-      </tbody>
-    </table>
+      </div>
+      {% endif %}
+
+      {% if item.viewer_reactions %}
+      <div class="section-label">Viewer Reactions</div>
+      <ul class="detail-list">
+        {% for r in item.viewer_reactions %}
+          <li>{{ r }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+
+      {% if item.pain_points %}
+      <div class="section-label">Pain Points</div>
+      <ul class="detail-list">
+        {% for p in item.pain_points %}
+          <li>{{ p }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+
+      {% if item.engagement_drivers %}
+      <div class="section-label">Engagement Drivers</div>
+      <ul class="detail-list">
+        {% for d in item.engagement_drivers %}
+          <li>{{ d }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+
+      <div class="section-label">Recommendation</div>
+      <div class="rec-text">{{ item.creator_recommendation }}</div>
+
+      {% if item.content_opportunities %}
+      <div class="section-label">Content Opportunities</div>
+      <ul class="detail-list">
+        {% for o in item.content_opportunities %}
+          <li>{{ o }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+    {% endfor %}
 
     <div class="actions">
       <a class="btn btn-secondary" href="{{ url_for('home') }}">← Back</a>
@@ -70,4 +197,3 @@
   </div>
 </body>
 </html>
-
