@@ -96,10 +96,10 @@
 
   <div class="main">
     <div class="card">
-      <div class="title">Extract comments (no YouTube Data API)</div>
+      <div class="title">YouTube Comment & Sentiment Analyzer</div>
       <div class="sub">
-        Paste a YouTube video URL. The app downloads comments using <b>youtube-comment-downloader</b>, removes duplicates + empty comments,
-        saves them to a CSV file, and returns progress + final CSV download.
+        Enter a YouTube video URL or search by title (e.g. <b>"toxiix trailer"</b>). The app finds the video, downloads comments,
+        segments them into intervals, runs sentiment analysis, and displays actionable suggestions.
       </div>
 
       <form method="POST" action="{{ url_for('analyze') }}">
@@ -107,20 +107,20 @@
           <input
             type="text"
             name="query"
-            placeholder="Enter a YouTube video URL (e.g., https://www.youtube.com/watch?v=VIDEO_ID)"
+            placeholder="Paste a YouTube URL or type a video title..."
             required
           />
-          <button type="submit" class="search-btn">Extract Comments</button>
+          <button type="submit" class="search-btn">Analyze Video</button>
         </div>
       </form>
 
       <div class="hint">Tip: some videos may have fewer comments than 1000. The app extracts as many as available (aiming for 2000).</div>
 
       <div class="example">
-        Examples:<br/>
-        • https://www.youtube.com/watch?v=dQw4w9WgXcQ<br/>
-        • https://youtu.be/dQw4w9WgXcQ<br/>
-        • https://www.youtube.com/shorts/dQw4w9WgXcQ
+        Examples of inputs:<br/>
+        • <b>toxiix trailer</b> (search query)<br/>
+        • <b>https://www.youtube.com/watch?v=dQw4w9WgXcQ</b> (full URL)<br/>
+        • <b>dQw4w9WgXcQ</b> (video ID)
       </div>
     </div>
   </div>

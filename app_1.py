@@ -95,6 +95,49 @@ def extract_video_id(url: str) -> Optional[str]:
     return None
 
 
+def search_youtube(query: str) -> Optional[str]:
+    """Search YouTube for a query and return the first video ID found.
+    
+    Tries Google YouTube Data API first, then falls back to scraping results page.
+    """
+    # 1. Try YouTube Data API if configured
+    api_key = os.getenv("YOUTUBE_API_KEY") or os.getenv("utube_KEY")
+    if api_key:
+        try:
+            from googleapiclient.discovery import build
+            youtube = build('youtube', 'v3', developerKey=api_key)
+            search_response = youtube.search().list(
+                q=query,
+                part='snippet',
+                maxResults=1,
+                type='video'
+            ).execute()
+            if search_response.get('items'):
+                return search_response['items'][0]['id']['videoId']
+        except Exception as e:
+            logger.warning("YouTube API search failed: %s. Falling back to scraping.", e)
+
+    # 2. Fallback to scraping
+    try:
+        import requests
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"
+        }
+        r = requests.get(
+            f"https://www.youtube.com/results?search_query={requests.utils.quote(query)}",
+            headers=headers,
+            timeout=10
+        )
+        if r.status_code == 200:
+            video_ids = re.findall(r'/watch\?v=([\w-]{11})', r.text)
+            if video_ids:
+                return video_ids[0]
+    except Exception as e:
+        logger.error("YouTube search scraping failed: %s", e)
+
+    return None
+
+
 def clean_comments_df(df: pd.DataFrame) -> pd.DataFrame:
     """Remove empty comments and duplicates.
 
@@ -245,20 +288,37 @@ def download_youtube_comments(
         raise
 
 
-def process_job(job_id: str, video_url: str, max_comments: int) -> None:
+def process_job(job_id: str, query_or_url: str, max_comments: int) -> None:
     """Background job runner."""
-    video_id = extract_video_id(video_url)
     job_store.update(
         job_id,
         state="running",
-        video_id=video_id,
         progress=1,
-        message="Validating URL...",
+        message="Resolving input...",
     )
 
     try:
+        video_id = extract_video_id(query_or_url)
+        
         if not video_id:
-            raise ValueError("Invalid YouTube URL. Could not extract a video id.")
+            job_store.update(
+                job_id,
+                message=f"Searching YouTube for '{query_or_url}'...",
+                progress=5,
+            )
+            video_id = search_youtube(query_or_url)
+            
+        if not video_id:
+            raise ValueError(f"Could not find any YouTube video for query: '{query_or_url}'")
+
+        video_url = f"https://www.youtube.com/watch?v={video_id}"
+        job_store.update(
+            job_id,
+            video_id=video_id,
+            video_url=video_url,
+            progress=10,
+            message="Connecting to YouTube comment stream...",
+        )
 
         comments, extracted_raw = download_youtube_comments(
             video_url,
@@ -361,25 +421,25 @@ def home() -> str:
 
 @app.route("/analyze", methods=["POST"])
 def analyze() -> Response:
-    video_url = (request.form.get("query") or "").strip()
+    user_input = (request.form.get("query") or "").strip()
 
-    if not video_url or not is_probably_youtube_url(video_url):
+    if not user_input:
         return render_template(
             "error.html",
-            error_title="Invalid YouTube URL",
-            error_message="Provide a valid YouTube video URL (youtube.com or youtu.be).",
+            error_title="Empty Input",
+            error_message="Please enter a YouTube video URL or a search term (e.g. video title).",
             error_details=None,
             recoverable=False,
         ), 400
 
-    job_id = job_store.create(video_url=video_url)
+    job_id = job_store.create(video_url=user_input)
 
     try:
         max_comments = int(os.getenv("MAX_COMMENTS", "2000"))
     except (ValueError, TypeError):
         max_comments = 2000
 
-    t = threading.Thread(target=process_job, args=(job_id, video_url, max_comments), daemon=True)
+    t = threading.Thread(target=process_job, args=(job_id, user_input, max_comments), daemon=True)
     t.start()
 
     return redirect(url_for("progress_page", job_id=job_id))
