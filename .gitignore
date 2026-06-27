@@ -1,1 +1,30 @@
+# Environment & secrets
 .env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Database
+instance/
+*.db
+
+# Generated output
+output/
+
+# Downloaded thumbnails
+static/*_thumbnail.jpg
+
+# Legacy / archived code
+_legacy/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

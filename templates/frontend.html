@@ -3,22 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Comment Analysing </title>
+  <title>YouTube Comment Extractor</title>
   <link rel="icon" type="image/png" href="{{ url_for('static', filename='youtube.png') }}">
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: 'Segoe UI', sans-serif;
-    }
-
-    body {
-      background-color: #000;
-      color: white;
-      overflow-x: hidden;
-    }
-
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+    body { background-color: #000; color: #fff; overflow-x: hidden; }
     header {
       display: flex;
       justify-content: space-between;
@@ -26,337 +15,115 @@
       padding: 30px 50px;
       background-color: #111;
     }
+    header h1 { font-size: 2.2rem; color: #f5c518; }
 
-    header h1 {
-      font-size: 2.5rem;
-      color: #f5c518;
-    }
-
-    .info-btn {
-      padding: 10px 20px;
-      font-size: 1rem;
-      border-radius: 30px;
-      background-color: #f5c518;
-      border: none;
-      cursor: pointer;
-      color: #000;
-      font-weight: bold;
-    }
-
-    .main-search {
+    .main {
       display: flex;
       justify-content: center;
       align-items: center;
-      gap: 10px;
       width: 100%;
-      margin: 40px 0 20px;
+      padding: 48px 20px;
     }
 
-    .main-search input {
-      width: 800px;
-      max-width: 80%;
-      padding: 18px 25px;
-      font-size: 1.2rem;
-      border-radius: 40px;
+    .card {
+      width: 100%;
+      max-width: 920px;
+      background: #0b0b0b;
+      border: 1px solid rgba(245,197,24,0.25);
+      border-radius: 18px;
+      padding: 26px;
+      box-shadow: 0 0 25px rgba(245,197,24,0.08);
+    }
+
+    .title { font-size: 1.4rem; color: #f5c518; font-weight: 900; margin-bottom: 10px; }
+    .sub { color: rgba(255,255,255,0.7); line-height: 1.6; margin-bottom: 20px; font-size: 1.05rem; }
+
+    form { width: 100%; }
+    .row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    input[type="text"] {
+      flex: 1 1 520px;
+      padding: 16px 20px;
+      font-size: 1.1rem;
+      border-radius: 14px;
       border: none;
       background-color: #222;
       color: white;
+      outline: none;
     }
 
-    .scroll-section {
-      padding: 40px 30px;
-      text-align: center;
-      position: relative;
-    }
-
-    .scroll-section h2 {
-      font-size: 2rem;
-      color: #f5c518;
-      margin-bottom: 30px;
-    }
-
-    .scroll-wrapper {
-      position: relative;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-
-    .movie-row {
-      display: flex;
-      gap: 30px;
-      overflow-x: auto;
-      scroll-behavior: smooth;
-      scroll-snap-type: x mandatory;
-      scroll-padding: 20px;
-      padding: 20px 60px;
-      max-width: 90vw;
-    }
-
-    .movie-row::-webkit-scrollbar {
-      height: 8px;
-    }
-
-    .movie-row::-webkit-scrollbar-thumb {
-      background: #555;
-      border-radius: 10px;
-    }
-
-    .movie-row::-webkit-scrollbar-track {
-      background: #111;
-    }
-
-    .movie-column {
-      flex: 0 0 auto;
-      scroll-snap-align: start;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 10px;
-      min-width: 200px;
-    }
-
-    .poster {
-      width: 180px;
-      height: 260px;
-      background-color: #222;
-      background-size: cover;
-      background-position: center;
-      border-radius: 15px;
-      box-shadow: 0 4px 10px rgba(255, 255, 255, 0.1);
-    }
-
-    .movie-title {
-      color: #ccc;
-      font-size: 1rem;
-      text-align: center;
-    }
     .search-btn {
-      padding: 14px 25px;
+      padding: 14px 24px;
       font-size: 1.1rem;
-      border-radius: 40px;
+      border-radius: 14px;
       border: none;
       background-color: #f5c518;
       color: #000;
-      font-weight: bold;
+      font-weight: 900;
       cursor: pointer;
-      transition: background-color 0.3s ease;
       white-space: nowrap;
     }
 
-    /* Loader overlay */
-    .overlay {
-      position: fixed;
-      inset: 0;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      background: rgba(0,0,0,0.72);
-      z-index: 9999;
+    .hint {
+      margin-top: 16px;
+      color: rgba(255,255,255,0.7);
+      font-size: 0.95rem;
+      line-height: 1.5;
     }
 
-    .overlay-card {
-      width: 92vw;
-      max-width: 760px;
-      background: linear-gradient(180deg, rgba(245,197,24,0.09), rgba(0,0,0,0.85));
-      border: 1px solid rgba(245,197,24,0.35);
-      border-radius: 18px;
-      padding: 26px;
-      box-shadow: 0 0 35px rgba(245,197,24,0.12);
-    }
-
-    .overlay-title {
-      font-size: 1.6rem;
-      color: #f5c518;
-      font-weight: 800;
-      margin-top: 6px;
-    }
-
-    .overlay-sub {
-      margin-top: 6px;
-      color: #d8d8d8;
-      font-size: 1.05rem;
-      line-height: 1.4;
-    }
-
-    .spinner {
-      width: 54px;
-      height: 54px;
-      border-radius: 50%;
-      border: 4px solid rgba(245,197,24,0.18);
-      border-top-color: #f5c518;
-      animation: spin 0.9s linear infinite;
-      margin-bottom: 10px;
-    }
-
-    .overlay-bar {
-      margin-top: 18px;
-      height: 14px;
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.06);
-      border-radius: 999px;
-      overflow: hidden;
-    }
-
-    .overlay-bar-fill {
-      height: 100%;
-      width: 10%;
-      background: linear-gradient(90deg, #f5c518, #d4a700);
-      border-radius: 999px;
-      transition: width 0.25s ease;
-      animation: fillMove 1.4s ease-in-out infinite;
-    }
-
-    .overlay-hint {
+    .example {
       margin-top: 12px;
-      color: rgba(255,255,255,0.75);
+      padding: 12px 14px;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      background: rgba(255,255,255,0.03);
+      color: rgba(255,255,255,0.85);
       font-size: 0.98rem;
+      line-height: 1.6;
     }
-
-    .search-shell {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      width: 100%;
-      justify-content: center;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    @keyframes fillMove {
-      0% { width: 12%; }
-      50% { width: 78%; }
-      100% { width: 12%; }
-    }
-
-
-    .arrow-btn {
-      position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
-      background: linear-gradient(145deg, #f5c518, #d4a700);
-      border: none;
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
-      box-shadow: 0 0 15px rgba(245, 197, 24, 0.5);
-      cursor: pointer;
-      font-size: 1.8rem;
-      color: black;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 1;
-    }
-
-    .arrow-left {
-      left: 10px;
-      display: none;
-    }
-
-    .arrow-right {
-      right: 10px;
-    }
-    .grid-container {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr); /* 2 columns */
-      gap: 20px;
-      padding: 20px;
-      justify-items: center;
-    }
-
-    .movie-item {
-      text-align: center;
-    }
-
   </style>
 </head>
 <body>
   <header>
-    <h1>youtube comments Analyser</h1>
-    <!-- <button class="info-btn">Account Info</button> -->
+    <h1>YouTube Comments Extractor</h1>
   </header>
 
-  <div class="main-search">
-    <form method="POST" id="searchForm">
-      <div class="search-shell">
-        <input type="text" name="query" placeholder="Enter youtube video name ..." required>
-        <button type="submit" class="search-btn">Analyze</button>
+  <div class="main">
+    <div class="card">
+      <div class="title">Extract comments (no YouTube Data API)</div>
+      <div class="sub">
+        Paste a YouTube video URL. The app downloads comments using <b>youtube-comment-downloader</b>, removes duplicates + empty comments,
+        saves them to a CSV file, and returns progress + final CSV download.
       </div>
-      <div id="loadingOverlay" class="overlay" aria-live="polite">
-        <div class="overlay-card">
-          <div class="spinner" aria-hidden="true"></div>
-          <div class="overlay-title">Analyzing comments</div>
-          <div class="overlay-sub">Extracting timestamps + sentiment insights…</div>
-          <div class="overlay-bar">
-            <div class="overlay-bar-fill" id="overlayBarFill"></div>
-          </div>
-          <div class="overlay-hint">This may take ~5–20 seconds depending on the video.</div>
+
+      <form method="POST" action="{{ url_for('analyze') }}">
+        <div class="row">
+          <input
+            type="text"
+            name="query"
+            placeholder="Enter a YouTube video URL (e.g., https://www.youtube.com/watch?v=VIDEO_ID)"
+            required
+          />
+          <button type="submit" class="search-btn">Extract Comments</button>
         </div>
+      </form>
+
+      <div class="hint">Tip: some videos may have fewer comments than 1000. The app extracts as many as available (aiming for 2000).</div>
+
+      <div class="example">
+        Examples:<br/>
+        • https://www.youtube.com/watch?v=dQw4w9WgXcQ<br/>
+        • https://youtu.be/dQw4w9WgXcQ<br/>
+        • https://www.youtube.com/shorts/dQw4w9WgXcQ
       </div>
-    </form>
+    </div>
   </div>
-
-
-  <div style="text-align: center; max-width: 900px; margin: 0 auto 40px; padding: 0 20px; color: #ccc; font-size: 1.1rem; line-height: 1.6;">
-    <p><strong>Sentiment Pulse</strong> is an AI-powered web application that analyzes YouTube video comments to extract timestamped viewer sentiments and provide actionable recommendations. Users simply enter a video topic or title, and the app fetches the most relevant video from YouTube, gathers its top comments, and scans for timestamps (e.g., "2:15", "10:30").</p>
-    <p><bold>Key Features:
-
-      <li>YouTube video search & comment scraping</li>
-      
-      <li>Timestamp detection in viewer comments</li>
-      
-      <li>AI-driven sentiment analysis & suggestions</li>
-      
-      <li>Clean web interface with detailed breakdowns</li></bold></p>
-  </div>
-
-<div style="display: flex; flex-wrap: wrap;">
-  
-  
-    <h2 style="text-align: center;">History</h2>
-<div class="grid-container">
-  {% for v in content %}
-  <div class="movie-item">
-    <a href="{{ url_for('show_video', video_id=v.video_id) }}">
-      <img src="{{ url_for('static', filename=v.thumbnail) }}" alt="{{ v.moviename }}" width="200">
-    </a>
-    <div class="movie-title">{{ v.moviename }}</div>
-  </div>
-  {% endfor %}
-</div>
-
-  
-
-  <script>
-    // Show a premium loading overlay immediately on submit.
-    const searchForm = document.getElementById('searchForm');
-    const overlay = document.getElementById('loadingOverlay');
-    if (searchForm && overlay) {
-      searchForm.addEventListener('submit', () => {
-        overlay.style.display = 'flex';
-      });
-    }
-
-    const movieRow = document.getElementById('movieRow');
-
-    const leftBtn = document.getElementById('leftBtn');
-    const rightBtn = document.getElementById('rightBtn');
-    const scrollAmount = 400;
-
-    rightBtn.addEventListener('click', () => {
-      movieRow.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-    });
-
-    leftBtn.addEventListener('click', () => {
-      movieRow.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
-    });
-
-    movieRow.addEventListener('scroll', () => {
-      leftBtn.style.display = movieRow.scrollLeft > 50 ? 'flex' : 'none';
-    });
-  </script>
 </body>
 </html>
+

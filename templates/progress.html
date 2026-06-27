@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Analyzing Comments...</title>
+  <title>Fetching Comments...</title>
   <style>
     * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; }
     body {
@@ -39,41 +39,49 @@
       width: 0%;
       background: linear-gradient(90deg, #f5c518, #d4a700);
       border-radius: 999px;
-      transition: width 0.25s ease;
+      transition: width 0.2s ease;
     }
 
-    .steps {
+    .kv {
       margin-top: 18px;
       display: grid;
+      grid-template-columns: 1fr;
       gap: 10px;
     }
-    .step {
-      display: flex;
-      gap: 12px;
-      align-items: center;
-      padding: 10px 12px;
-      border-radius: 12px;
+    .row {
       background: rgba(255,255,255,0.03);
       border: 1px solid rgba(255,255,255,0.05);
-      opacity: 0.75;
+      border-radius: 14px;
+      padding: 12px 14px;
     }
-    .dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background: rgba(245,197,24,0.25);
-      box-shadow: 0 0 0 rgba(245,197,24,0.0);
-    }
-    .step.active { opacity: 1; border-color: rgba(245,197,24,0.35); }
-    .step.active .dot { background: #f5c518; box-shadow: 0 0 18px rgba(245,197,24,0.28); }
-    .step.done { opacity: 1; border-color: rgba(245,197,24,0.45); }
-    .step.done .dot { background: #46e37b; box-shadow: 0 0 18px rgba(70,227,123,0.28); }
+    .label { color: rgba(255,255,255,0.72); font-size: 0.95rem; }
+    .value { margin-top: 6px; color: #fff; font-weight: 800; font-size: 1.05rem; }
 
-    .small {
-      margin-top: 14px;
-      color: #9a9a9a;
-      font-size: 0.95rem;
+    .actions {
+      margin-top: 18px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
     }
+
+    .btn {
+      appearance: none;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px 18px;
+      border-radius: 999px;
+      font-weight: 800;
+      font-size: 1rem;
+      transition: transform 0.06s ease, filter 0.2s ease;
+    }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary { background-color: #f5c518; color: #000; }
+    .btn-secondary { background: rgba(255,255,255,0.06); color: #fff; border: 1px solid rgba(255,255,255,0.12); }
 
     @media (max-width: 480px) {
       h1 { font-size: 1.3rem; }
@@ -83,59 +91,98 @@
 </head>
 <body>
   <div class="card">
-    <h1>Analyzing comment sentiment…</h1>
-    <p>This can take a few seconds. We’re collecting timestamps and generating interval-wise sentiment + recommendations.</p>
+    <h1>Fetching YouTube comments…</h1>
+    <p id="message">Starting…</p>
 
     <div class="bar-wrap" aria-label="progress">
       <div class="bar" id="bar"></div>
     </div>
 
-    <div class="steps">
-      <div class="step active" id="s1"><span class="dot"></span> Fetching comments</div>
-      <div class="step" id="s2"><span class="dot"></span> Extracting timestamps</div>
-      <div class="step" id="s3"><span class="dot"></span> Generating recommendations</div>
-      <div class="step" id="s4"><span class="dot"></span> Saving results</div>
+    <div class="kv">
+      <div class="row">
+        <div class="label">Extracted (raw)</div>
+        <div class="value" id="rawCount">0</div>
+      </div>
+      <div class="row">
+        <div class="label">Extracted (after cleaning)</div>
+        <div class="value" id="cleanCount">0</div>
+      </div>
+      <div class="row">
+        <div class="label">Video ID</div>
+        <div class="value" id="videoId">—</div>
+      </div>
     </div>
 
-    <div class="small">Tip: If you don’t see output, try a different video with fewer timestamped comments.</div>
+    <div class="actions">
+      <a class="btn btn-secondary" href="{{ url_for('home') }}">← Back</a>
+      <a class="btn btn-primary" id="downloadBtn" style="display:none;" href="#" target="_blank">Download CSV</a>
+      <a class="btn btn-secondary" id="analysisBtn" style="display:none;" href="#" target="_blank">View Analysis</a>
+    </div>
+
+
+    <p style="margin-top:14px;color:rgba(255,255,255,0.7);font-size:0.95rem;">
+      This may take a while depending on the video and your network.
+    </p>
   </div>
 
   <script>
-    // Simple simulated progress. For real progress, switch to AJAX + backend status updates.
-    const bar = document.getElementById('bar');
-    const steps = [
-      document.getElementById('s1'),
-      document.getElementById('s2'),
-      document.getElementById('s3'),
-      document.getElementById('s4'),
-    ];
+    const jobId = "{{ job_id }}";
 
-    function setActive(i) {
-      steps.forEach((el, idx) => {
-        el.classList.remove('active', 'done');
-        if (idx < i) el.classList.add('done');
-        if (idx === i) el.classList.add('active');
-      });
+    const bar = document.getElementById('bar');
+    const msg = document.getElementById('message');
+    const rawCountEl = document.getElementById('rawCount');
+    const cleanCountEl = document.getElementById('cleanCount');
+    const videoIdEl = document.getElementById('videoId');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const analysisBtn = document.getElementById('analysisBtn');
+
+
+    function setProgress(p) {
+      const clamped = Math.max(0, Math.min(100, p));
+      bar.style.width = clamped + '%';
     }
 
-    let p = 0;
-    setActive(0);
+    async function poll() {
+      try {
+        const res = await fetch(`/status/${jobId}`, { cache: 'no-store' });
+        if (!res.ok) {
+          msg.textContent = `Status error (${res.status})`;
+          setTimeout(poll, 1000);
+          return;
+        }
 
-    const tick = () => {
-      // non-linear ramp
-      const inc = 2 + Math.random() * 6;
-      p = Math.min(94, p + inc);
-      bar.style.width = p + '%';
+        const data = await res.json();
+        setProgress(data.progress || 0);
+        msg.textContent = data.message || data.state || 'Working...';
 
-      if (p >= 25) setActive(1);
-      if (p >= 55) setActive(2);
-      if (p >= 80) setActive(3);
+        if (typeof data.extracted_raw === 'number') rawCountEl.textContent = data.extracted_raw;
+        if (typeof data.extracted_clean === 'number') cleanCountEl.textContent = data.extracted_clean;
+        if (data.video_id) videoIdEl.textContent = data.video_id;
 
-      if (p >= 94) return;
-      setTimeout(tick, 300);
-    };
+        if (data.state === 'done') {
+          downloadBtn.href = `/download/${jobId}`;
+          downloadBtn.style.display = 'inline-flex';
 
-    setTimeout(tick, 250);
+          analysisBtn.href = `/analysis/${jobId}`;
+          analysisBtn.style.display = 'inline-flex';
+
+          msg.textContent = 'Completed. View analysis below.';
+          return;
+        }
+
+
+        if (data.state === 'error') {
+          msg.textContent = data.error ? `Failed: ${data.error}` : 'Failed.';
+          return;
+        }
+      } catch (e) {
+        msg.textContent = 'Network error while polling status.';
+      }
+
+      setTimeout(poll, 1000);
+    }
+
+    setTimeout(poll, 500);
   </script>
 </body>
 </html>

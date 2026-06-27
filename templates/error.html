@@ -190,11 +190,12 @@
     {% endif %}
 
     <div class="actions">
-      <a class="btn btn-secondary" href="{{ url_for('index') }}">← Back to Home</a>
+      <a class="btn btn-secondary" href="{{ url_for('home') }}">← Back to Home</a>
       {% if recoverable %}
-      <a class="btn btn-primary" href="{{ retry_url or url_for('index') }}">Try Again</a>
+      <a class="btn btn-primary" href="{{ retry_url or url_for('home') }}">Try Again</a>
       {% endif %}
     </div>
+
 
     <div class="small-note">
       If this keeps happening, try a different video (fewer timestamped comments works best).

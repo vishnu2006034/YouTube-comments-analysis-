@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Comment Interval Analysis</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='youtube.png') }}">
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+    body { background-color: #000; color: white; display: flex; flex-direction: column; align-items: center; padding: 40px 20px; }
+
+    .wrap { width: 100%; max-width: 1000px; }
+    .title { font-size: 2rem; color: #f5c518; text-align: center; margin-bottom: 16px; font-weight: 900; }
+    .sub { text-align: center; color: rgba(255,255,255,0.7); margin-bottom: 26px; line-height: 1.5; }
+
+    table { width: 100%; border-collapse: collapse; background: #111; border-radius: 10px; overflow: hidden; box-shadow: 0 10px 20px rgba(255,255,255,0.05); }
+    th, td { padding: 14px 14px; border-bottom: 1px solid #333; color: #ccc; vertical-align: top; }
+    th { background-color: #222; color: #f5c518; font-size: 1.02rem; }
+
+    tr:last-child td { border-bottom: none; }
+
+    .badge { display: inline-block; padding: 6px 12px; border-radius: 999px; background: rgba(245,197,24,0.12); border: 1px solid rgba(245,197,24,0.35); color: #f5c518; font-weight: 900; font-size: 0.95rem; margin-bottom: 14px; }
+
+    .actions { margin-top: 18px; display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+    .btn { appearance: none; border: none; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; padding: 12px 18px; border-radius: 999px; font-weight: 800; font-size: 1rem; transition: transform 0.06s ease, filter 0.2s ease; }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary { background-color: #f5c518; color: #000; }
+    .btn-secondary { background: rgba(255,255,255,0.06); color: #fff; border: 1px solid rgba(255,255,255,0.12); }
+
+    @media (max-width: 700px) {
+      th:nth-child(1), td:nth-child(1) { width: 30%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="title">Interval Sentiment & Recommendations</div>
+    <div class="sub">
+      Video: <b>{{ video_id }}</b> • Generated from extracted comment CSV.
+    </div>
+
+    <div class="badge">{{ count }} intervals with insights</div>
+
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 18%">Interval</th>
+          <th>Sentiment</th>
+          <th>Recommendation</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in data %}
+          <tr>
+            <td style="color:#fff; font-weight:900">{{ item.interval }}</td>
+            <td>{{ item.sentiment_analysis }}</td>
+            <td>{{ item.recommendation }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div class="actions">
+      <a class="btn btn-secondary" href="{{ url_for('home') }}">← Back</a>
+      {% if csv_path %}
+        <a class="btn btn-primary" href="{{ url_for('job_csv_download', job_id=job_id) }}" target="_blank">Download CSV</a>
+      {% endif %}
+    </div>
+  </div>
+</body>
+</html>
+
